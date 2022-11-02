@@ -5,7 +5,6 @@ import parse
 import openpyxl
 import pandas as pd
 import xlrd
-from config.config import ROOT_DIR
 from tabulate import tabulate
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_extraction.text import CountVectorizer

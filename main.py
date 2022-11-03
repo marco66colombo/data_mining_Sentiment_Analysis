@@ -73,7 +73,14 @@ def main():
     print(y_pred)
     y_pred_1 = []
     for i in range(y_pred.shape[0]):
-        y_pred_1.append(int(round(y_pred[i])))
+        #y_pred_1.append(int(round(y_pred[i])))
+        if y_pred[i] < -0.2:
+            y_pred_1.append(-1)
+        elif y_pred[i] > 0.2:
+            y_pred_1.append(1)
+        else:
+            y_pred_1.append(0)
+
     print(y_pred_1)
 
     print(len(y_pred_1))

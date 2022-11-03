@@ -30,6 +30,7 @@ def makeTextCleaning(df):
     df['text'] = [slang_fix(sentence) for sentence in df["text"]]
     df['text'] = [el.lower() for el in df["text"]]
 
+    #df['text'] = [text.replace('\e', '') for text in df["text"]]
     df['text'] = [re.sub(r'(\\u[0-9A-Fa-f]+)', ' ', text) for text in df["text"]]
     df['text'] = [re.sub(r'[^\x00-\x7f]', ' ', text) for text in df["text"]]
     df["text"] = [re.sub(r'@(\w+)', 'tag ', text) for text in df["text"]]

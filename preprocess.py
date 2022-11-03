@@ -40,6 +40,8 @@ def makeTextCleaning(df):
     df['text'] = [elimination_vowels(el) for el in df['text']]
     df['text'] = [abbreviation_fix(sentence) for sentence in df["text"]]
 
+    return df
+
 '''
     nltk.download('wordnet')
     nltk.download('punkt')

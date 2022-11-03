@@ -1,9 +1,11 @@
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import accuracy_score, precision_score, recall_score
 from sklearn.model_selection import train_test_split, GridSearchCV
 from tabulate import tabulate
 
 import preprocess
+import sklearn as sk
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.naive_bayes import GaussianNB
 import pandas as pd
@@ -16,6 +18,7 @@ from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_sc
 import string
 import re
 import csv
+import sklearn.metrics as m
 
 import nltk
 
@@ -33,10 +36,10 @@ def main():
     df_with_class_2 = pd.read_excel(path, sheet_name="Obama")
     print(df_with_class_2.describe())
 
-    df = df_with_class_2[df_with_class_2['Class'] != 2]
+    df = df_with_class_2[df_with_class_2['Class'].isin((1,-1,0))]
     df = df.dropna()
-    preprocess.makeTextCleaning(df)
-    #print(tabulate(df, headers='keys'))
+    df = preprocess.makeTextCleaning(df)
+    print(tabulate(df, headers='keys'))
 
     features = df.drop("Class", axis=1)
     labels = df["Class"].to_numpy()
@@ -48,21 +51,49 @@ def main():
 
 
     #documents, labels = load_as_list(X_train['text'], y_train)
-    documents = X_train['text'].to_numpy()
+    documents = X_train['text']
     labels = y_train
 
     #labels = labels.astype(np.float)
 
-    print('ciao', type(labels[12]))
     vectorizer = TfidfVectorizer()
     tfidf_train = vectorizer.fit_transform(documents)
 
     tfidf_test = vectorizer.transform(X_test['text'])
+    print('aaa')
+    print(labels)
+    print('aaa')
 
-    regressor = RandomForestRegressor(n_estimators=20, random_state=0)
+    regressor = RandomForestRegressor(n_estimators=50, random_state=0)
     regressor.fit(tfidf_train, labels)
 
+
     y_pred = regressor.predict(tfidf_test)
+
+    print(y_pred)
+    y_pred_1 = []
+    for i in range(y_pred.shape[0]):
+        y_pred_1.append(int(round(y_pred[i])))
+    print(y_pred_1)
+
+    print(len(y_pred_1))
+    print(y_test.shape[0])
+
+    print(type(y_test))
+
+    y_test_1 = []
+    for i in range(y_test.shape[0]):
+        y_test_1.append(int(y_test[i]))
+
+
+
+    acc = m.accuracy_score(y_test_1, y_pred_1)
+    cm = m.confusion_matrix(y_test_1, y_pred_1)
+
+    print('accuracy: ', acc)
+    print('cm: ', cm)
+
+
 
 
 

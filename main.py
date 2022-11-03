@@ -1,7 +1,9 @@
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import accuracy_score, precision_score, recall_score
 from sklearn.model_selection import train_test_split, GridSearchCV
+from tabulate import tabulate
 
-import parse
+import preprocess
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.naive_bayes import GaussianNB
 import pandas as pd
@@ -17,103 +19,62 @@ import csv
 
 import nltk
 
+def load_as_list(X, y):
+    documents = X.values.tolist()
+    labels = y.values.tolist()
+
+    return documents, labels
+
 
 
 def main():
-    df = parse.parseInput()
-    print(df.describe())
-    df2 = df[df['Class'] != 2]
 
-    #print(df2['Anootated tweet'])
-    df2 = df2.dropna()
-    print('is nan:')
-    print(df2['text'].isna().sum())
+    path = 'training-Obama-Romney-tweets.xlsx'
+    df_with_class_2 = pd.read_excel(path, sheet_name="Obama")
+    print(df_with_class_2.describe())
 
-    print(tabulate(df2, headers='keys'))
+    df = df_with_class_2[df_with_class_2['Class'] != 2]
+    df = df.dropna()
+    preprocess.makeTextCleaning(df)
+    #print(tabulate(df, headers='keys'))
 
-    features = df2.drop("Class", axis=1)
-    labels = df2["Class"]
+    features = df.drop("Class", axis=1)
+    labels = df["Class"].to_numpy()
 
-
+    #TODO creare una funzione che dato un test set in input, fa preprocessing e poi classifica
 
     X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size=0.8, random_state=1)
 
 
 
+    #documents, labels = load_as_list(X_train['text'], y_train)
+    documents = X_train['text'].to_numpy()
+    labels = y_train
 
+    #labels = labels.astype(np.float)
 
-
-
-# Before running code that makes use of Word2Vec, you will need to download the provided w2v.pkl file
-# which contains the pre-trained word2vec representations from Blackboard
-#
-# If you store the downloaded .pkl file in the same directory as this Python
-# file, leave the global EMBEDDING_FILE variable below as is.  If you store the
-# file elsewhere, you will need to update the file path accordingly.
-EMBEDDING_FILE = "w2v.pkl"
-
-
-
-
-
-# Function: load_as_list(fname)
-# fname: A string indicating a filename
-# Returns: Two lists: one a list of document strings, and the other a list of integers
-#
-# This helper function reads in the specified, specially-formatted CSV file
-# and returns a list of documents (documents) and a list of binary values (label).
-# TODO: change and adapt function to our excel
-def load_as_list(fname):
-    df = pd.read_csv(fname)
-    documents = df['review'].values.tolist()
-    labels = df['label'].values.tolist()
-    return documents, labels
-
-
-
-# Function to convert a given string into a list of tokens
-# Args:
-#   inp_str: input string
-# Returns: token list, dtype: list of strings
-def get_tokens(inp_str):
-    return inp_str.split()
-
-
-# Function: preprocessing, see project statement for more details
-# Args:
-#   user_input: A string of arbitrary length
-# Returns: A string of arbitrary length
-def preprocessing(user_input):
-    modified_input = ""
-    # [YOUR CODE HERE]
-    tokenized_input = get_tokens(user_input)
-    string.punctuation
-    without_punctuation_input = []
-    for token in tokenized_input:
-        # match = p.match(token)
-        if token not in string.punctuation:
-            without_punctuation_input.append(token)
-    lowercase_tokens = [t.lower() for t in without_punctuation_input]
-    token_string = str(lowercase_tokens[0])
-    for i in range(1, len(lowercase_tokens)):
-        token_string = token_string + " " + lowercase_tokens[i]
-    return token_string
-
-
-# Function: vectorize_train, see project statement for more details
-# training_documents: A list of strings
-# Returns: An initialized TfidfVectorizer model, and a document-term matrix, dtype: scipy.sparse.csr.csr_matrix
-def vectorize_train(training_documents):
-    # Initialize the TfidfVectorizer model and document-term matrix
+    print('ciao', type(labels[12]))
     vectorizer = TfidfVectorizer()
-    tfidf_train = []
-    processed_data = []
-    for doc in training_documents:
-        processed_data.append(preprocessing(doc))
-    processed_data = vectorizer.fit_transform(processed_data)
-    return vectorizer, processed_data
+    tfidf_train = vectorizer.fit_transform(documents)
+
+    tfidf_test = vectorizer.transform(X_test['text'])
+
+    regressor = RandomForestRegressor(n_estimators=20, random_state=0)
+    regressor.fit(tfidf_train, labels)
+
+    y_pred = regressor.predict(tfidf_test)
 
 
+
+
+
+
+
+
+
+
+
+'''
 # Function: vectorize_test, see project statement for more details
 # vectorizer: A trained TFIDF vectorizer
 # user_input: A string of arbitrary length
@@ -254,8 +215,8 @@ def words_per_sentence(user_input):
     # print(wps)
     return wps
 
-
-
+'''
+'''
 
 # Use this main function to test your code. Sample code is provided to assist with the assignment,
 # feel free to change/remove it. In project components, this function might be graded, see rubric for details.
@@ -292,7 +253,7 @@ if __name__ == "__main__":
             outfile_writer.writerow([model_names[i], p, r, f, a])
         i += 1
     outfile.close()
-
+'''
 
 
 if __name__ == '__main__':

@@ -1,8 +1,12 @@
+from datetime import datetime
+
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import accuracy_score, precision_score, recall_score
 from sklearn.model_selection import train_test_split, GridSearchCV
 from tabulate import tabulate
+import scipy as sp
+import scipy.sparse
 
 import preprocess
 import sklearn as sk
@@ -22,6 +26,9 @@ import sklearn.metrics as m
 
 import nltk
 
+from parse_date import try_parsing_date, parse_date
+
+
 def load_as_list(X, y):
     documents = X.values.tolist()
     labels = y.values.tolist()
@@ -39,16 +46,23 @@ def main():
     df = df_with_class_2[df_with_class_2['Class'].isin((1,-1,0))]
     df = df.dropna()
     df = preprocess.makeTextCleaning(df)
-    print(tabulate(df, headers='keys'))
+    df = preprocess.makeDateCleaning(df)
+
+    print(df.describe())
+    #print(tabulate(df, headers='keys'))
+
+    df = df.dropna()
+    df = df.dropna()
+    print(df.describe())
 
     features = df.drop("Class", axis=1)
     labels = df["Class"].to_numpy()
 
     #TODO creare una funzione che dato un test set in input, fa preprocessing e poi classifica
 
-    X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size=0.8, random_state=1)
+    X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size=0.2, random_state=1)
 
-
+    print(X_train['time'])
 
     #documents, labels = load_as_list(X_train['text'], y_train)
     documents = X_train['text']
@@ -60,15 +74,37 @@ def main():
     tfidf_train = vectorizer.fit_transform(documents)
 
     tfidf_test = vectorizer.transform(X_test['text'])
-    print('aaa')
-    print(labels)
-    print('aaa')
 
-    regressor = RandomForestRegressor(n_estimators=50, random_state=0)
-    regressor.fit(tfidf_train, labels)
+    feature_names = vectorizer.get_feature_names()
+    dense = tfidf_train.todense()
+    lst1 = dense.tolist()
+    data_train = pd.DataFrame(lst1, columns=feature_names)
+    #data_train['time'] = X_train['time']
 
 
-    y_pred = regressor.predict(tfidf_test)
+
+    dense_test = tfidf_test.todense()
+    lst2 = dense_test.tolist()
+    data_test = pd.DataFrame(lst2, columns=feature_names)
+    #data_test['time'] = X_test['time']
+    #print(data_test['time'])
+
+    #tfidf_train_df = from_spmatrix(tfidf_train, index=None, columns=None)
+    #new_col = X_train['time'].to_list()
+    #tfidf_train = sp.sparse.hstack((tfidf_train, new_col))
+    #tfidf_train = sp.hstack([tfidf_train, sp.csr_matrix(new_col).T], 'csr')
+    #tfidf_train = np.concatenate((tfidf_train, new_col), axis=1)
+
+    regressor = RandomForestRegressor(n_estimators=100, random_state=0)
+    regressor.fit(data_train, labels)
+
+    new_col_test = X_test['time'].to_list()
+    #tfidf_test = sp.sparse.hstack((tfidf_test, new_col_test))
+    #tfidf_test = sp.hstack([tfidf_test, sp.csr_matrix(new_col_test).T], 'csr')
+    #tfidf_test = np.concatenate((tfidf_test, new_col_test), axis=1)
+
+    y_pred = regressor.predict(data_test)
+    #y_pred = sk.model_selection.cross_val_predict(regressor, data_train, y_train, cv=10)
 
     print(y_pred)
     y_pred_1 = []

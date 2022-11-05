@@ -1,60 +1,30 @@
-import re
-
-import nltk
 import pandas as pd
-from nltk import WordNetLemmatizer
+import numpy as np
+from sklearn.feature_extraction.text  import TfidfVectorizer
+import re
+import nltk
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize, sent_tokenize
+from nltk.stem import WordNetLemmatizer, PorterStemmer
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import f1_score
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.naive_bayes import GaussianNB
+from sklearn import svm
+from sklearn.linear_model import LogisticRegression
+from imblearn.under_sampling import RandomUnderSampler
+from imblearn.over_sampling import RandomOverSampler
+from imblearn.under_sampling import RandomUnderSampler
+from scipy.sparse import csr_matrix
+from textblob import TextBlob
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+from sklearn.compose import make_column_transformer
+from sklearn.base import TransformerMixin, BaseEstimator
 
-
-
-def makeTextCleaning(df):
-    # Defining regex for emojis
-    smileemoji        = r"[8:=;]['`\-]?[)d]+"
-    sademoji          = r"[8:=;]['`\-]?\(+"
-    neutralemoji      = r"[8:=;]['`\-]?[\/|l*]"
-    lolemoji          = r"[8:=;]['`\-]?p+"
-
-    df['text'] = [el.lower() for el in df["text"]]
-    df["text"] = [re.sub(r"http[^\s]+", " ", text) for text in df["text"]]
-    df["text"] = [re.sub(r"https[^\s]+", " ", text) for text in df["text"]]
-    df["text"] = [re.sub(r"www\.[^\s]+", " ", text) for text in df["text"]]
-
-    df['text'] = [special_character_fix(sentence) for sentence in df["text"]]
-    df['text'] = [re.sub(r'<3', 'love', el) for el in df["text"]]
-    df['text'] = [re.sub(smileemoji, 'happy', el) for el in df["text"]]
-    df['text'] = [re.sub(sademoji, 'sad', el) for el in df["text"]]
-    df['text'] = [re.sub(neutralemoji, 'neutral', el) for el in df["text"]]
-    df['text'] = [re.sub(lolemoji, 'lol', el) for el in df["text"]]
-
-    df['text'] = [re.sub(r'lo+l+', "lol", text) for text in df["text"]]
-    df['text'] = [re.sub(r'`', "'", text) for text in df["text"]]
-    df['text'] = [slang_fix(sentence) for sentence in df["text"]]
-    df['text'] = [el.lower() for el in df["text"]]
-
-    #df['text'] = [text.replace('\e', '') for text in df["text"]]
-    df['text'] = [re.sub(r'(\\u[0-9A-Fa-f]+)', ' ', text) for text in df["text"]]
-    df['text'] = [re.sub(r'[^\x00-\x7f]', ' ', text) for text in df["text"]]
-    df["text"] = [re.sub(r'@(\w+)', 'tag ', text) for text in df["text"]]
-    df["text"] = [re.sub(r'#([^\s]+)', 'hashtag ', text) for text in df["text"]]
-    df['text'] = [re.sub(r"\d+", " ", text) for text in df["text"]]
-    df['text'] = [remove_puntaction(el) for el in df['text']]
-    df['text'] = [re.sub(r'-', ' ', el) for el in df["text"]]
-    df['text'] = [elimination_vowels(el) for el in df['text']]
-    df['text'] = [abbreviation_fix(sentence) for sentence in df["text"]]
-
-    return df
-
-'''
-    nltk.download('wordnet')
-    nltk.download('punkt')
-    nltk.download('averaged_perceptron_tagger')
-'''
-'''
-    development = pd.read_csv("/content/DSL2122_january_dataset/development.csv", parse_dates=["date"])
-    evaluation = pd.read_csv("/content/DSL2122_january_dataset/evaluation.csv", parse_dates=["date"])
-    development.set_index('ids', drop=False, inplace=True)
-    checkpoint = pd.concat([development, evaluation], sort=False)
-'''
-
+from parse_date import parse_date, parse_time
 
 # COSTANTS
 
@@ -163,152 +133,152 @@ abbr_dict = {
 }
 
 slang_dict = {
-     "&LT;3": "heart",
-     "&LT;/3": "broken heart",
-     "@TEOTD": "At the end of the day",
-     ".02": "My two cents worth",
-     "1UP": "extra life",
-     "121": "private chat",
-     "1337": "Leet, 'elite'",
-     "143": "I love you",
-     "C": "see",
-     "CUZ": "Because",
-     "1432": "I love you too",
-     "14AA41": "One for all, and all for one",
-     "182": "I hate you",
-     "10X": "Thanks",
-     "10Q": "Thank you",
-     "1CE": "Once",
-     "1DR": "I wonder",
-     "1NAM": "One in a million",
-     "2B": "To be",
-     "2EZ": "Too easy",
-     "2G2BT": "Too good to be true",
-     "2M2H": "Too much too handle",
-     "2MI": "Too much information",
-     "2MOR": "Tomorrow",
-     "2MORO": "Tomorrow",
-     "2M2H": "Too much to handle",
-     "2N8": "Tonight",
-     "2NTE": "Tonight",
-     "4AO": "For adults only",
-     "4COL": "For crying out loud",
-     "4EAE": "Forever and ever",
-     "4EVA": "Forever",
-     "4NR": "Foreigner",
-     "4SALE": "For sale",
-     "6Y": "Sexy",
-     "7K": "Sick",
-     "A3": "Anytime, anywhere, anyplace",
-     "AA": "As above",
-     "AAF": "As a matter of fact",
-     "AAK": "Asleep at keyboard",
-     "AAMOF": "As a matter of fact",
-     "AAMOI": "As a matter of interest",
-     "AAP": "Always a pleasure",
-     "AAR": "At any rate",
-     "AAS": "Alive and smiling",
-     "AASHTA": "As always, Sheldon has the answer",
-     "AATK": "Always at the keyboard",
-     "AAYF": "As always, your friend",
-     "ABBR": "abbreviation",
-     "ABC": "Already been chewed",
-     "ABD": "Already been done",
-     "ABT": "About",
-     "ABT2": "'About to'",
-     "ABTA": "Good-bye",
-     "ABU": "All bugged up",
-     "AC": "Acceptable content",
-     "ACC": "Anyone can come",
-     "ACD": "ALT / CONTROL / DELETE",
-     "ACDNT": "Accident",
-     "ACK": "Acknowledge",
-     "ACPT": "Accept",
-     "ACQSTN": "Acquisition",
-     "ADAD": "Another day, another dollar",
-     "ADBB": "All done, bye-bye",
-     "ADDY": "Address",
-     "ADIH": "Another day in hell",
-     "ADIP": "Another day in paradise",
-     "ADMIN": "Administrator",
-     "ADMINR": "Administrator",
-     "ADN": "Any day now",
-     "ADR": "Address",
-     "AEAP": "As early as possible",
-     "AF": "April Fools",
-     "AFC": "Away from computer",
-     "AFAIAA": "As far as I am aware",
-     "AFAIC": "As far as I am concerned",
-     "AFAIK": "As far as I know",
-     "AFAIUI": "As far as I understand it",
-     "AFAP": "As far as possible",
-     "AFFA": "Angels Forever, Forever Angels",
-     "AFJ": "April Fool's joke",
-     "AFK": "Away from keyboard",
-     "AFZ": "Acronym Free Zone",
-     "AFPOE": "A fresh pair of eyes",
-     "AIAMU": "And I am a money's uncle",
-     "AIGHT": "Alright",
-     "AISB": "As it should be",
-     "AISB": "As I said before",
-     "AISI": "As I see it",
-     "AITR": "Adult in the room",
-     "AKA": "Also known as",
-     "ALCON": "All concerned",
-     "ALOL": "Actually laughing out loud",
-     "AMA": "Ask me anything",
-     "AMAP": "As much as possible",
-     "AMBW": "All my best wishes",
-     "AML": "All my love",
-     "AMOF": "As a matter of fact",
-     "A/N": "Author's note",
-     "AOC": "Available on cell",
-     "AOE": "Area of effect",
-     "AOM": "Age of majority",
-     "AOTA": "All of the above",
-     "AOYP": "Angel on your pillow",
-     "APAC": "All praise and credit",
-     "AQAP": "As quick as possible",
-     "ARC": "compressed files",
-     "ARG": "Argument",
-     "ASIG": "And so it goes",
-     "ASAP": "As soon as possible",
-     "A/S/L": "Age/sex/location",
-     "ASL": "Age/sex/location",
-     "ASLA": "Age/sex/location/availability",
-     "ATB": "All the best",
-     "ATEOTD": "At the end of the day",
-     "ATM": "At the moment",
-     "ATSITS": "All the stars in the sky",
-     "ATSL": "Along the same line",
-     "AWC": "After awhile crocodile",
-     "AWESO": "Awesome",
-     "AWOL": "Away without leaving",
-     "AYDY": "Are you done yet?",
-     "AYEC": "At your earliest convenience",
-     "AYOR": "At your own risk",
-     "AYSOS": "Are you stupid or something?",
-     "AYS": "Are you serious?",
-     "AYT": "Are you there?",
-     "AYTMTB": "And you're telling me this because",
-     "AYV": "Are you vertical?",
-     "AYW": "As you were",
-     "AYW": "As you want",
-     "AZN": "Asian",
-     "B&amp;": "Banned",
-     "B2W": "Back to work",
-     "B8": "Bait",
-     "B9": "Boss is watching",
-     "B/F": "Boyfriend",
-     "B/G": "Background",
-     "B4": "Before",
-     "B4N": "Bye for now",
-     "BAG": "Busting a gut",
-     "BAE": "Before anyone else",
-     "BAE": "Babe or baby",
-     "BAFO": "Best and final offer",
-     "BAK": "Back at keyboard",
-     "BAM": "Below average mentality",
+    "&LT;3": "heart",
+    "&LT;/3": "broken heart",
+    "@TEOTD": "At the end of the day",
+    ".02": "My two cents worth",
+    "1UP": "extra life",
+    "121": "private chat",
+    "1337": "Leet, 'elite'",
+    "143": "I love you",
+    "C": "see",
+    "CUZ": "Because",
+    "1432": "I love you too",
+    "14AA41": "One for all, and all for one",
+    "182": "I hate you",
+    "10X": "Thanks",
+    "10Q": "Thank you",
+    "1CE": "Once",
+    "1DR": "I wonder",
+    "1NAM": "One in a million",
+    "2B": "To be",
+    "2EZ": "Too easy",
+    "2G2BT": "Too good to be true",
+    "2M2H": "Too much too handle",
+    "2MI": "Too much information",
+    "2MOR": "Tomorrow",
+    "2MORO": "Tomorrow",
+    "2M2H": "Too much to handle",
+    "2N8": "Tonight",
+    "2NTE": "Tonight",
+    "4AO": "For adults only",
+    "4COL": "For crying out loud",
+    "4EAE": "Forever and ever",
+    "4EVA": "Forever",
+    "4NR": "Foreigner",
+    "4SALE": "For sale",
+    "6Y": "Sexy",
+    "7K": "Sick",
+    "A3": "Anytime, anywhere, anyplace",
+    "AA": "As above",
+    "AAF": "As a matter of fact",
+    "AAK": "Asleep at keyboard",
+    "AAMOF": "As a matter of fact",
+    "AAMOI": "As a matter of interest",
+    "AAP": "Always a pleasure",
+    "AAR": "At any rate",
+    "AAS": "Alive and smiling",
+    "AASHTA": "As always, Sheldon has the answer",
+    "AATK": "Always at the keyboard",
+    "AAYF": "As always, your friend",
+    "ABBR": "abbreviation",
+    "ABC": "Already been chewed",
+    "ABD": "Already been done",
+    "ABT": "About",
+    "ABT2": "'About to'",
+    "ABTA": "Good-bye",
+    "ABU": "All bugged up",
+    "AC": "Acceptable content",
+    "ACC": "Anyone can come",
+    "ACD": "ALT / CONTROL / DELETE",
+    "ACDNT": "Accident",
+    "ACK": "Acknowledge",
+    "ACPT": "Accept",
+    "ACQSTN": "Acquisition",
+    "ADAD": "Another day, another dollar",
+    "ADBB": "All done, bye-bye",
+    "ADDY": "Address",
+    "ADIH": "Another day in hell",
+    "ADIP": "Another day in paradise",
+    "ADMIN": "Administrator",
+    "ADMINR": "Administrator",
+    "ADN": "Any day now",
+    "ADR": "Address",
+    "AEAP": "As early as possible",
+    "AF": "April Fools",
+    "AFC": "Away from computer",
+    "AFAIAA": "As far as I am aware",
+    "AFAIC": "As far as I am concerned",
+    "AFAIK": "As far as I know",
+    "AFAIUI": "As far as I understand it",
+    "AFAP": "As far as possible",
+    "AFFA": "Angels Forever, Forever Angels",
+    "AFJ": "April Fool's joke",
+    "AFK": "Away from keyboard",
+    "AFZ": "Acronym Free Zone",
+    "AFPOE": "A fresh pair of eyes",
+    "AIAMU": "And I am a money's uncle",
+    "AIGHT": "Alright",
+    "AISB": "As it should be",
+    "AISB": "As I said before",
+    "AISI": "As I see it",
+    "AITR": "Adult in the room",
+    "AKA": "Also known as",
+    "ALCON": "All concerned",
+    "ALOL": "Actually laughing out loud",
+    "AMA": "Ask me anything",
+    "AMAP": "As much as possible",
+    "AMBW": "All my best wishes",
+    "AML": "All my love",
+    "AMOF": "As a matter of fact",
+    "A/N": "Author's note",
+    "AOC": "Available on cell",
+    "AOE": "Area of effect",
+    "AOM": "Age of majority",
+    "AOTA": "All of the above",
+    "AOYP": "Angel on your pillow",
+    "APAC": "All praise and credit",
+    "AQAP": "As quick as possible",
+    "ARC": "compressed files",
+    "ARG": "Argument",
+    "ASIG": "And so it goes",
+    "ASAP": "As soon as possible",
+    "A/S/L": "Age/sex/location",
+    "ASL": "Age/sex/location",
+    "ASLA": "Age/sex/location/availability",
+    "ATB": "All the best",
+    "ATEOTD": "At the end of the day",
+    "ATM": "At the moment",
+    "ATSITS": "All the stars in the sky",
+    "ATSL": "Along the same line",
+    "AWC": "After awhile crocodile",
+    "AWESO": "Awesome",
+    "AWOL": "Away without leaving",
+    "AYDY": "Are you done yet?",
+    "AYEC": "At your earliest convenience",
+    "AYOR": "At your own risk",
+    "AYSOS": "Are you stupid or something?",
+    "AYS": "Are you serious?",
+    "AYT": "Are you there?",
+    "AYTMTB": "And you're telling me this because",
+    "AYV": "Are you vertical?",
+    "AYW": "As you were",
+    "AYW": "As you want",
+    "AZN": "Asian",
+    "B&amp;": "Banned",
+    "B2W": "Back to work",
+    "B8": "Bait",
+    "B9": "Boss is watching",
+    "B/F": "Boyfriend",
+    "B/G": "Background",
+    "B4": "Before",
+    "B4N": "Bye for now",
+    "BAG": "Busting a gut",
+    "BAE": "Before anyone else",
+    "BAE": "Babe or baby",
+    "BAFO": "Best and final offer",
+    "BAK": "Back at keyboard",
+    "BAM": "Below average mentality",
     "BAMF": "Bad ass mother  f ",
     "BAO": "Be aware of",
     "BAS": "Big smile",
@@ -1441,6 +1411,7 @@ slang_dict = {
     "ZUP": "What's up?",
     "ZZZ": "Bored"}
 
+
 def slang_fix(sentence):
     res = " ".join(slang_dict.get(remove_puntaction_whitespaces(ele.upper()), ele) for ele in sentence.split(" "))
     return res
@@ -1454,6 +1425,7 @@ def abbreviation_fix(sentence):
     sentence = re.sub(r"'ll", " will", sentence)
     res = " ".join(abbr_dict.get(remove_whitespaces(ele), ele) for ele in sentence.split(" "))
     return res
+
 
 def elimination_vowels(sentence):
     text = ''
@@ -1500,3 +1472,54 @@ def lemming(sentence):
     for word in sentence_words:
         phrase = phrase + ' ' + (wordnet_lemmatizer.lemmatize(word, pos="v"))
     return phrase
+
+
+def makeTextCleaning(df):
+
+    #Defining regex for emojis
+
+    smileemoji = r"[8:=;]['`\-]?[)d]+"
+    sademoji = r"[8:=;]['`\-]?\(+"
+    neutralemoji = r"[8:=;]['`\-]?[\/|l*]"
+    lolemoji = r"[8:=;]['`\-]?p+"
+
+    df['text'] = [el.lower() for el in df["text"]]
+    df["text"] = [re.sub(r"http[^\s]+", " ", text) for text in df["text"]]
+    df["text"] = [re.sub(r"https[^\s]+", " ", text) for text in df["text"]]
+    df["text"] = [re.sub(r"www\.[^\s]+", " ", text) for text in df["text"]]
+
+    df['text'] = [special_character_fix(sentence) for sentence in df["text"]]
+    df['text'] = [re.sub(r'<3', ' love', el) for el in df["text"]]
+    df['text'] = [re.sub(smileemoji, ' happy', el) for el in df["text"]]
+    df['text'] = [re.sub(sademoji, ' sad', el) for el in df["text"]]
+    df['text'] = [re.sub(neutralemoji, ' neutral', el) for el in df["text"]]
+    df['text'] = [re.sub(lolemoji, ' lol', el) for el in df["text"]]
+
+    df['text'] = [re.sub(r'lo+l+', "lol", text) for text in df["text"]]
+    df['text'] = [re.sub(r'`', "'", text) for text in df["text"]]
+    df['text'] = [slang_fix(sentence) for sentence in df["text"]]
+    df['text'] = [el.lower() for el in df["text"]]
+
+    df['text'] = [re.sub(r'(\\u[0-9A-Fa-f]+)', ' ', text) for text in df["text"]]
+    df['text'] = [re.sub(r'[^\x00-\x7f]', ' ', text) for text in df["text"]]
+    df["text"] = [re.sub(r'@(\w+)', 'tag ', text) for text in df["text"]]
+    df["text"] = [re.sub(r'#([^\s]+)', 'hashtag ', text) for text in df["text"]]
+    df['text'] = [re.sub(r"\d+", " ", text) for text in df["text"]]
+    df['text'] = [remove_puntaction(el) for el in df['text']]
+    df['text'] = [re.sub(r'-', ' ', el) for el in df["text"]]
+    df['text'] = [elimination_vowels(el) for el in df['text']]
+    df['text'] = [abbreviation_fix(sentence) for sentence in df["text"]]
+
+    df["text"] = [lemming(el) for el in df['text']]
+
+    df['text'] = [text.replace('/e', '') for text in df["text"]]
+    df['text'] = [text.replace('/a', '') for text in df["text"]]
+
+    return df
+
+
+def makeDateCleaning(df):
+
+    df['date'] = df['date'].apply(parse_date)
+    df['time'] = df['time'].apply(parse_time)
+    return df

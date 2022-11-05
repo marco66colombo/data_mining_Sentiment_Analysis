@@ -1,10 +1,7 @@
 from datetime import datetime
 from datetime import time as dtime
-
 import re
-
 import numpy as np
-import pandas as pd
 
 # 21:09:06-05:00
 regex1 = r"^([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]-05:00$"
@@ -27,14 +24,12 @@ def try_parsing_date(text):
 
 def parse_date(elem):
     if(isinstance(elem,datetime)):
-        return elem.date()
+        return elem#.date()
     else:
         try:
-            return try_parsing_date(elem.strip()).date()
-            #print(date)
+            return try_parsing_date(elem.strip())#.date()
         except:
-            return np.nan#datetime.now().date()
-        #print(try_parsing_date(elem))
+            return np.nan#datetime.now()#.date()
 
 
 def parse_time(elem):
@@ -66,38 +61,10 @@ def parse_time(elem):
 
     return np.nan
 
+def translate_time(elem):
+    if elem < 12:
+        return 0
+    if elem < 19:
+        return 1
+    return 2
 
-
-
-
-'''def parse_time(df, col_name):
-    list_of_raw_times = []
-    list_of_raw_times = df[col_name].astype(str).tolist()
-    for time in list_of_raw_times:
-        time = time.replace(" ", "")
-        # 21:09:06-05:00
-        regex1 = r"^([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]-05:00$"
-        # 21:09:06-05:00
-        regex2 = r"^(AM|PM)([0-9]|1[0-9]):([0-5][0-9]|[0-9]):([0-5][0-9]|[0-9])$"
-        # 9:01:04 PM / 9:03:25 AM
-        regex3 = r"^([0-9]|[1-2][0-2]):([0-5][0-9]|[0-9]):([0-5][0-9]|[0-9])(AM|PM)$"
-        # 23:53:46
-        regex4 = r"^([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$"
-    
-    
-    if re.compile(regex1).match(time) is not None:
-    # assign morning/afternoon/evening
-    time = "ok"
-    elif re.compile(regex2).match(time) is not None:
-    # assign morning/afternoon/evening
-    time = "ok"
-    elif re.compile(regex3).match(time) is not None:
-    # ...
-    time = "ok"
-    elif re.compile(regex4).match(time) is not None:
-    # ...
-    time = "ok"
-    else:
-    # leave it time =
-    time = time
-    print(time)'''

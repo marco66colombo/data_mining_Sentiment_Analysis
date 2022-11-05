@@ -24,7 +24,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.compose import make_column_transformer
 from sklearn.base import TransformerMixin, BaseEstimator
 
-from parse_date import parse_date, parse_time
+from parse_date import parse_date, parse_time, translate_time
 
 # COSTANTS
 
@@ -1522,4 +1522,7 @@ def makeDateCleaning(df):
 
     df['date'] = df['date'].apply(parse_date)
     df['time'] = df['time'].apply(parse_time)
+    df = df.dropna()
+    df['time'] = df['time'].astype(int)
+    #df['time'] = df['time'].apply(translate_time)
     return df

@@ -89,13 +89,13 @@ def main():
     print(y_pred_1)
     #print(type(y_test))
 
-    '''y_test_1 = []
-    for i in range(y_test.shape[0]):
-        y_test_1.append(int(y_test[i]))'''
-
     y_test_1 = []
+    for i in range(y_test.shape[0]):
+        y_test_1.append(int(y_test[i]))
+
+    '''y_test_1 = []
     for i in range(labels.shape[0]):
-        y_test_1.append(int(labels[i]))
+        y_test_1.append(int(labels[i]))'''
 
     acc = m.accuracy_score(y_test_1, y_pred_1)
     cm = m.confusion_matrix(y_test_1, y_pred_1)

@@ -1,9 +1,17 @@
 import pandas as pd
 import preprocess
 import re
-import gensim
 from nltk.tokenize.treebank import TreebankWordDetokenizer
+from keras.preprocessing.text import Tokenizer
+from keras.utils import pad_sequences
+from keras import regularizers
 from keras import *
+from keras.models import Sequential
+from keras import layers
+from keras import regularizers
+from keras import backend as K
+from keras.callbacks import ModelCheckpoint
+from keras.layers import Embedding
 
 def depure_data(data):
 
@@ -22,7 +30,7 @@ def depure_data(data):
 
     return data
 
-def sent_to_words(sentences):
+def sent_to_words(sentences, gensim=None):
     for sentence in sentences:
         yield(gensim.utils.simple_preprocess(str(sentence), deacc=True))
 
@@ -56,9 +64,7 @@ def main():
         data.append(detokenize(data_words[i]))
     print(data[:5])
 
-    from keras.preprocessing.text import Tokenizer
-    from keras.preprocessing.sequence import pad_sequences
-    from keras import regularizers
+
 
     max_words = 5000
     max_len = 200
@@ -69,14 +75,10 @@ def main():
     tweets = pad_sequences(sequences, maxlen=max_len)
     print(tweets)
 
-    from keras.layers import Embedding
+
     embedding_layer = Embedding(1000, 64)
 
-    from keras.models import Sequential
-    from keras import layers
-    from keras import regularizers
-    from keras import backend as K
-    from keras.callbacks import ModelCheckpoint
+
     model1 = Sequential()
     model1.add(layers.Embedding(max_words, 20)) #The embedding layer
     model1.add(layers.LSTM(15,dropout=0.5)) #Our LSTM layer

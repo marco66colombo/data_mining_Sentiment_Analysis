@@ -1,17 +1,18 @@
 import pandas as pd
 import preprocess
 import re
+import gensim
 from nltk.tokenize.treebank import TreebankWordDetokenizer
-from keras.preprocessing.text import Tokenizer
 from keras.utils import pad_sequences
+from keras.preprocessing.text import Tokenizer
 from keras import regularizers
-from keras import *
 from keras.models import Sequential
 from keras import layers
 from keras import regularizers
 from keras import backend as K
 from keras.callbacks import ModelCheckpoint
 from keras.layers import Embedding
+from sklearn.cross_validation import train_test_split
 
 def depure_data(data):
 
@@ -30,7 +31,7 @@ def depure_data(data):
 
     return data
 
-def sent_to_words(sentences, gensim=None):
+def sent_to_words(sentences):
     for sentence in sentences:
         yield(gensim.utils.simple_preprocess(str(sentence), deacc=True))
 
@@ -53,7 +54,17 @@ def main():
     temp = []
     #Splitting pd.Series to list
 
+    df = df.dropna()
+
+
     train = df
+
+    features = df[['date', 'time', 'text']]
+    labels = df["Class"].to_numpy()
+
+
+    X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size=0.2, random_state=1)
+
 
     data_to_list = train['text'].values.tolist()
     for i in range(len(data_to_list)):
@@ -74,7 +85,6 @@ def main():
     sequences = tokenizer.texts_to_sequences(data)
     tweets = pad_sequences(sequences, maxlen=max_len)
     print(tweets)
-
 
     embedding_layer = Embedding(1000, 64)
 

@@ -1436,7 +1436,7 @@ def elimination_vowels(sentence):
 
 def remove_whitespaces(sentence):
     sentence = sentence.replace(" ", "")
-    # sentence = re.sub(r"[\"?!,\.]", "", sentence)
+    #sentence = re.sub(r"[\"?!,\.]", "", sentence)
     return sentence
 
 

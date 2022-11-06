@@ -1,5 +1,6 @@
 import pandas as pd
 import preprocess
+import tensorflow
 import re
 import gensim
 from nltk.tokenize.treebank import TreebankWordDetokenizer
@@ -12,7 +13,8 @@ from keras import regularizers
 from keras import backend as K
 from keras.callbacks import ModelCheckpoint
 from keras.layers import Embedding
-from sklearn.cross_validation import train_test_split
+from sklearn.model_selection import train_test_split
+
 
 def depure_data(data):
 
@@ -33,14 +35,14 @@ def depure_data(data):
 
 def sent_to_words(sentences):
     for sentence in sentences:
-        yield(gensim.utils.simple_preprocess(str(sentence), deacc=True))
+        yield(gensim.simple_preprocess(str(sentence), deacc=True))
 
 
 def detokenize(text):
     return TreebankWordDetokenizer().detokenize(text)
 
 
-def main():
+def main2():
 
     path = 'training-Obama-Romney-tweets.xlsx'
     df_with_class_2 = pd.read_excel(path, sheet_name="Obama")
@@ -110,7 +112,3 @@ def main():
 
 
 
-
-
-if __name__ == '__main__':
-    main()

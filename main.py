@@ -1,5 +1,4 @@
 import time
-
 import scipy as sp
 from sklearn import model_selection, __all__, svm
 from sklearn.ensemble import RandomForestRegressor
@@ -17,8 +16,8 @@ import nltk
 import textblob
 
 
+# compute the performance measures
 def scores(y_test, y_pred, model_name):
-    # compute the performance measures
     print('\n' + model_name + ' results:\n')
     score1 = accuracy_score(y_test, y_pred)
     print("accuracy:   %0.3f" % score1)
@@ -101,18 +100,17 @@ def main():
     data_train['time__'] = X_train['time'].values
     data_train['date__'] = X_train['date'].dt.dayofweek.values
 
-    final_train = sp.sparse.hstack([tfidf_train, sp.sparse.csr_matrix(X_train['time'].values).T], 'csr')
-    final_test = sp.sparse.hstack([tfidf_test, sp.sparse.csr_matrix(X_test['time'].values).T], 'csr')
-
-    '''print('type = ', type(final_train['time'].values))
-    print('shape = ', final_train['time'].values.shape)'''
-
     dense_test = tfidf_test.todense()
     lst2 = dense_test.tolist()
     data_test = pd.DataFrame(lst2, columns=feature_names)
     data_test['time__'] = X_test['time'].values
     data_test['date__'] = X_test['date'].dt.dayofweek.values
 
+    # same as data_train/test but with sparse matrix
+    final_train = sp.sparse.hstack([tfidf_train, sp.sparse.csr_matrix(X_train['time'].values).T], 'csr')
+    final_test = sp.sparse.hstack([tfidf_test, sp.sparse.csr_matrix(X_test['time'].values).T], 'csr')
+
+    # SVM --------------------------------------------------------------------------------------------------------------
     # train the SVM classificator
     start = time.time()
     svm_regressor = svm.SVC(kernel='rbf', gamma=0.58, C=0.81, class_weight='balanced')
@@ -126,7 +124,7 @@ def main():
     # compute the performance measures
     scores(y_test, y_pred, 'SVM')
 
-
+    # RANDOM FOREST ----------------------------------------------------------------------------------------------------
     # train the random forest classificator
     start = time.time()
     regressor = RandomForestRegressor(n_estimators=100, random_state=0)
@@ -154,6 +152,7 @@ def main():
     # compute the performance measures
     scores(y_test, y_pred_1, 'Random Forest')
 
+    # NAIVE BAYES ------------------------------------------------------------------------------------------------------
     # Naive Bayes Classificator
     y = y_train
     y = y.astype(int)

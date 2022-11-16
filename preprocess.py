@@ -1524,5 +1524,5 @@ def makeDateCleaning(df):
     df['time'] = df['time'].apply(parse_time)
     df = df.dropna()
     df['time'] = df['time'].astype(int)
-    #df['time'] = df['time'].apply(translate_time)
+    df['time'] = df['time'].apply(translate_time)
     return df

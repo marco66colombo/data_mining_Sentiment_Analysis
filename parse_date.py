@@ -63,8 +63,24 @@ def parse_time(elem):
 
 def translate_time(elem):
     if elem < 12:
-        return 0
+        return 'morning'
     if elem < 19:
-        return 1
-    return 2
+        return 'noon'
+    return 'night'
+
+
+def translate_day_of_week(elem):
+    if elem == 1:
+        return 'Monday'
+    if elem == 2:
+        return 'Tuesday'
+    if elem == 3:
+        return 'Wednesday'
+    if elem == 4:
+        return 'Thursday'
+    if elem == 5:
+        return 'Friday'
+    if elem == 6:
+        return 'Saturday'
+    return 'Sunday'
 

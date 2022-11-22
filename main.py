@@ -146,12 +146,12 @@ def main():
     # train the SVM classificator
     start = time.time()
     svm_regressor = svm.SVC(kernel='rbf', gamma=0.58, C=0.81, class_weight='balanced')
-    svm_regressor.fit(final_train, y_train)
+    svm_regressor.fit(tfidf_train, y_train)
     stop = time.time()
     print(f"Training time SVM: {stop - start}s")
 
     # compute the prediction
-    y_pred = svm_regressor.predict(final_test)
+    y_pred = svm_regressor.predict(tfidf_test)
 
     # compute the performance measures
     scores(y_test, y_pred, 'SVM')

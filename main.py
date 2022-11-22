@@ -9,6 +9,7 @@ from sklearn.naive_bayes import MultinomialNB
 from tabulate import tabulate
 import preprocess
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
 import pandas as pd
 import sklearn.metrics as m
 import sklearn.metrics
@@ -17,9 +18,10 @@ import nltk
 import textblob
 from imblearn.over_sampling import SMOTE
 import seaborn as sns
-
+from sklearn.model_selection import RandomizedSearchCV
+from scipy.stats import reciprocal, uniform
 from parse_date import translate_day_of_week
-
+import pickle
 
 # compute the performance measures
 def scores(y_test, y_pred, model_name):
@@ -48,7 +50,7 @@ def main():
     df_raw_romney = df_raw_romney.dropna()
 
     # build single dataframe with all the examples
-    ###### CHANGE HERE TO RUN THE CLASSIFIERS WITH DIFFERENT DATASETS
+    # CHANGE HERE TO RUN THE CLASSIFIERS WITH DIFFERENT DATASETS
     df_raw = pd.concat([df_raw_obama, df_raw_romney], axis=0)
     #df_raw = df_raw_obama
     #df_raw = df_raw_romney
@@ -80,24 +82,20 @@ def main():
     # describe dataframe after preprocessing
     print('df description after preprocessing ', df.describe())
     print('counts after preprocessing ', df['Class'].value_counts())
-    # print(tabulate(df, headers='keys'))
+    print(tabulate(df, headers='keys'))
 
-
-    #create new features -> USE ONE HOT ENCODING
-
+    # create new features -> USE ONE HOT ENCODING
     df['date'] = df['date'].dt.dayofweek.values
 
     time_one_hot = pd.get_dummies(df['time'], prefix='time')
     day_of_week_one_hot = pd.get_dummies(df['date'], prefix='date')
 
     df = df.drop(columns=['time', 'date'])
-    #df = pd.concat([df, time_one_hot, day_of_week_one_hot], axis=1)
+    df = pd.concat([df, time_one_hot, day_of_week_one_hot], axis=1)
     df = pd.concat([df, time_one_hot], axis=1)
 
     labels = df["Class"].to_numpy()
     features = df.drop(columns=['Class'])  # df[['date', 'time', 'text']]
-
-    #TODO creare una funzione che dato un test set in input, fa preprocessing e poi classifica
 
     # creating the training set and the test set
     X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size=0.2, random_state=1)
@@ -124,26 +122,25 @@ def main():
     final_train = sp.sparse.hstack([tfidf_train, csr_matrix_train], 'csr')
     final_test = sp.sparse.hstack([tfidf_test, csr_matrix_test], 'csr')
 
-    '''
-    feature_names = vectorizer.get_feature_names()
-    dense = tfidf_train.todense()
-    lst1 = dense.tolist()
-    data_train = pd.DataFrame(lst1, columns=feature_names)
-    data_train['time__'] = X_train['time'].values
-    data_train['date__'] = X_train['date'].dt.dayofweek.values
 
-    dense_test = tfidf_test.todense()
-    lst2 = dense_test.tolist()
-    data_test = pd.DataFrame(lst2, columns=feature_names)
-    data_test['time__'] = X_test['time'].values
-    data_test['date__'] = X_test['date'].dt.dayofweek.values
+    # LOGISTIC REGRESSION ----------------------------------------------------------------------------------------------
+    # train the logistic regression classificator
+    lr_classifier = LogisticRegression(random_state=0, max_iter=1000).fit(tfidf_train, y_train)
+    y_pred = lr_classifier.predict(tfidf_test)
+    scores(y_test, y_pred, 'Logistic Regression')
 
-    # same as data_train/test but with sparse matrix
-    final_train = sp.sparse.hstack([tfidf_train, sp.sparse.csr_matrix(X_train['time'].values).T], 'csr')
-    final_test = sp.sparse.hstack([tfidf_test, sp.sparse.csr_matrix(X_test['time'].values).T], 'csr')'''
 
     # SVM --------------------------------------------------------------------------------------------------------------
     # train the SVM classificator
+    '''param_distribution = {"gamma": reciprocal(0.001, 0.1), "C": uniform(0.5, 10)}
+    rnd_search_cv = RandomizedSearchCV(svm.SVC(), param_distribution, n_iter=10, verbose=2, cv=3)
+    rnd_search_cv.fit(tfidf_train, y_train)
+    print(rnd_search_cv.best_estimator_)
+    print(rnd_search_cv.best_score_)
+    rnd_search_cv.best_estimator_.fit(tfidf_train, y_train)
+    y_pred = rnd_search_cv.best_estimator_.predict(tfidf_test)'''
+
+
     start = time.time()
     svm_regressor = svm.SVC(kernel='rbf', gamma=0.58, C=0.81, class_weight='balanced')
     svm_regressor.fit(tfidf_train, y_train)
@@ -159,13 +156,13 @@ def main():
     # RANDOM FOREST ----------------------------------------------------------------------------------------------------
     # train the random forest classificator
     start = time.time()
-    regressor = RandomForestRegressor(n_estimators=100, random_state=0)
-    regressor.fit(final_train, y_train)
+    regressor = RandomForestRegressor(n_estimators=100, random_state=0, min_samples_split=10, min_samples_leaf=2, max_features='sqrt')
+    regressor.fit(tfidf_train, y_train)
     stop = time.time()
     print(f"Training time Random Forest: {stop - start}s")
 
     #compute the prediction
-    y_pred = regressor.predict(final_test)
+    y_pred = regressor.predict(tfidf_test)
 
     print('predicitons', y_pred)
 

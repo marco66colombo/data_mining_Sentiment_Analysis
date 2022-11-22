@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.feature_extraction.text  import TfidfVectorizer
 import re
 import nltk
-from nltk.corpus import stopwords
+from nltk.corpus import stopwords, wordnet
 from nltk.tokenize import word_tokenize, sent_tokenize
 from nltk.stem import WordNetLemmatizer, PorterStemmer
 from sklearn.model_selection import train_test_split

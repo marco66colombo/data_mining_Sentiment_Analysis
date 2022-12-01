@@ -11,6 +11,7 @@ from tabulate import tabulate
 import preprocess
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
 import pandas as pd
 import sklearn.metrics as m
 import sklearn.metrics
@@ -28,7 +29,8 @@ from statistics import mean
 from sklearn.pipeline import make_pipeline
 from sklearn.model_selection import cross_val_predict
 from sklearn.model_selection import cross_validate
-
+import matplotlib.pyplot as plt
+import numpy as np
 
 
 def start():
@@ -45,10 +47,52 @@ def start():
 
     # build single dataframe with all the examples
     # CHANGE HERE TO RUN THE CLASSIFIERS WITH DIFFERENT DATASETS
-    df_raw = pd.concat([df_raw_obama, df_raw_romney], axis=0)
-    #df_raw = df_raw_obama
-    #df_raw = df_raw_romney
+    df_raw_all = pd.concat([df_raw_obama, df_raw_romney], axis=0)
+    df_raw_obama = df_raw_obama
+    df_raw_romney = df_raw_romney
 
+    features_all, labels_all = preprocess_data(df_raw_all)
+    features_obama, labels_obama = preprocess_data(df_raw_obama)
+    features_romney, labels_romney = preprocess_data(df_raw_romney)
+
+    try_classifiers(features_all, labels_all, 'Obama+Romney')
+    try_classifiers(features_obama, labels_obama, 'Obama')
+    try_classifiers(features_romney, labels_romney, 'Romney')
+
+
+def try_classifiers(features, labels, datasetName):
+
+    # false means that the flag useOnlyText = false, that means that text is not the only feature used, but also date and time
+    # true means that the flag useOnlyText = true, that means that the only used feature is the text
+
+    f1_true = {}
+    f1_false = {}
+    accuracy_true = {}
+    accuracy_false = {}
+
+    f1_true['LogisticRegression'], accuracy_true['LogisticRegression'] = cross_validate(LogisticRegression(random_state=0, max_iter=1000), 'LogisticRegression', 10, features, labels, True)
+    f1_false['LogisticRegression'], accuracy_false['LogisticRegression'] = cross_validate(LogisticRegression(random_state=0, max_iter=1000), 'LogisticRegression', 10, features, labels, False)
+
+    f1_true['svm-rbf'], accuracy_true['svm-rbf'] = cross_validate(svm.SVC(kernel='rbf', gamma=0.6, C=0.8, class_weight='balanced'), 'svm-rbf', 10, features, labels, True)
+    f1_false['svm-rbf'], accuracy_false['svm-rbf'] = cross_validate(svm.SVC(kernel='rbf', gamma=0.6, C=0.8, class_weight='balanced'), 'svm-rbf', 10, features, labels, False)
+
+    f1_true['svm-linear'], accuracy_true['svm-linear'] = cross_validate(svm.SVC(kernel='linear', class_weight='balanced'), 'svm-linear', 10, features, labels, True)
+    f1_false['svm-linear'], accuracy_false['svm-linear'] = cross_validate(svm.SVC(kernel='linear', class_weight='balanced'), 'svm-linear', 10, features, labels, False)
+
+    f1_true['naive bayes'], accuracy_true['naive bayes'] = cross_validate(MultinomialNB(), 'naive bayes', 10, features, labels, True)
+    f1_false['naive bayes'], accuracy_false['naive bayes'] = cross_validate(MultinomialNB(), 'naive bayes', 10, features, labels, False)
+
+    f1_true['DecisionTree'], accuracy_true['DecisionTree'] = cross_validate(DecisionTreeClassifier(), 'DecisionTree', 10, features, labels, True)
+    f1_false['DecisionTree'], accuracy_false['DecisionTree'] = cross_validate(DecisionTreeClassifier(), 'DecisionTree', 10, features, labels, False)
+
+    plot_accuracy(accuracy_true, datasetName, 'true')
+    plot_accuracy(accuracy_false, datasetName, 'false')
+    plot_f1(f1_true, datasetName, 'true')
+    plot_f1(f1_false, datasetName, 'false')
+
+
+
+def preprocess_data(df_raw):
     # ensure that only the desired columns are used
     df_raw = df_raw[['date', 'time', 'text', 'Class']]
 
@@ -85,21 +129,7 @@ def start():
     labels = df["Class"].to_numpy()
     features = df.drop(columns=['Class'])  # df[['date', 'time', 'text']]
 
-    # cross_validate(RandomForestRegressor(n_estimators=100, random_state=0, min_samples_split=10, min_samples_leaf=2, max_features='sqrt'), 'naive bayes', 10, features, labels, False)
-
-    cross_validate(LogisticRegression(random_state=0, max_iter=1000), 'LogisticRegression', 10, features, labels, True)
-    cross_validate(LogisticRegression(random_state=0, max_iter=1000), 'LogisticRegression', 10, features, labels, False)
-
-    cross_validate(svm.SVC(kernel='rbf', gamma=0.6, C=0.8, class_weight='balanced'), 'svm-rbf', 10, features, labels, True)
-    cross_validate(svm.SVC(kernel='rbf', gamma=0.6, C=0.8, class_weight='balanced'), 'svm-rbf', 10, features, labels, False)
-
-    cross_validate(svm.SVC(kernel='linear', class_weight='balanced'), 'svm-linear', 10, features, labels, True)
-    cross_validate(svm.SVC(kernel='linear', class_weight='balanced'), 'svm-linear', 10, features, labels, False)
-
-    cross_validate(MultinomialNB(), 'naive bayes', 10, features, labels, True)
-    cross_validate(MultinomialNB(), 'naive bayes', 10, features, labels, False)
-
-
+    return features, labels
 
 def encodeFeatures(X_train, X_test, useonlytext):
 
@@ -165,8 +195,8 @@ def cross_validate(model, modelName, cv, X, Y, useOnlyText):
         start = time.time()
         model.fit(X_train, y_train)
         stop = time.time()
-        print('\nModel: ', modelName)
-        print(f"Training time: {stop - start}s")
+        # print('\nModel: ', modelName)
+        # print(f"Training time: {stop - start}s")
 
         # compute the prediction
         y_pred = model.predict(X_test)
@@ -179,6 +209,69 @@ def cross_validate(model, modelName, cv, X, Y, useOnlyText):
     print('\nprecision', precision)
     print('\nrecall', recall)
     print('\nOverall Accuracy:', mean(accuracy) * 100, '%')
+
+    return f1, mean(accuracy)
+
+def plot_accuracy(accuracy_dict, dataset, onlyText):
+
+    accuracy = accuracy_dict.values()
+    X = accuracy_dict.keys()
+
+    X_axis = np.arange(len(X))
+    X_axis = [i/4 for i in X_axis]
+
+    width = 0.1  # the width of the bars
+
+    fig, ax = plt.subplots()
+    acc = ax.bar(X_axis, accuracy, width)
+
+    ax.set_xticks(X_axis, X)
+    ax.set_xlabel("Classifiers")
+    ax.set_ylabel("accuracy")
+    title = "Accuracy - " + dataset + " - useOnlyText: " + onlyText
+    ax.set_title(title)
+    ax.legend()
+
+    ax.bar_label(acc, padding=3, fmt='%.3f')
+
+    plt.show()
+
+    return
+
+
+
+def plot_f1(f1, dataset, onlyText):
+
+    f1_negative = [round(f1[key]['-1'], 3) for key in f1]
+    f1_neutral = [round(f1[key]['0'], 3) for key in f1]
+    f1_positive = [round(f1[key]['1'], 3) for key in f1]
+    X = f1.keys()
+
+    X_axis = np.arange(len(X))
+
+    width = 0.2  # the width of the bars
+
+    fig, ax = plt.subplots()
+    neg = ax.bar(X_axis - 0.2, f1_negative, width, label='-1')
+    neut = ax.bar(X_axis + 0, f1_neutral, width, label='0')
+    pos = ax.bar(X_axis + 0.2, f1_positive, width, label='1')
+
+    ax.set_xticks(X_axis, X)
+    ax.set_xlabel("Classifiers")
+    ax.set_ylabel("f1-score")
+    title = "F1-score - " + dataset + " - useOnlyText: " + onlyText
+    ax.set_title(title)
+    ax.legend()
+
+    ax.bar_label(neg, padding=3)
+    ax.bar_label(neut, padding=3)
+    ax.bar_label(pos, padding=3)
+
+    fig.tight_layout()
+
+    plt.show()
+
+    return
 
 
 start()

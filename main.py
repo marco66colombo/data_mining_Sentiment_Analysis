@@ -22,6 +22,8 @@ from sklearn.model_selection import RandomizedSearchCV
 from scipy.stats import reciprocal, uniform
 from parse_date import translate_day_of_week
 import pickle
+from sklearn.model_selection import StratifiedKFold
+from statistics import mean
 
 # compute the performance measures
 def scores(y_test, y_pred, model_name):
@@ -69,6 +71,7 @@ def main():
     df_x, df_y = rus.fit_resample(df[['date', 'time', 'text']], df['Class'])
     df = pd.concat([df_x, df_y], axis=1)'''
 
+
     # print info about class distribution
     print('counts', df['Class'].value_counts())
 
@@ -94,8 +97,11 @@ def main():
     df = pd.concat([df, time_one_hot, day_of_week_one_hot], axis=1)
     df = pd.concat([df, time_one_hot], axis=1)
 
+
     labels = df["Class"].to_numpy()
     features = df.drop(columns=['Class'])  # df[['date', 'time', 'text']]
+
+
 
     # creating the training set and the test set
     X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size=0.2, random_state=1)
@@ -107,6 +113,10 @@ def main():
     vectorizer = TfidfVectorizer()
     tfidf_train = vectorizer.fit_transform(X_train['text'])
     tfidf_test = vectorizer.transform(X_test['text'])
+
+    '''tfidf_train = tfidf_train.toarray()
+    sm = SMOTE(random_state=42)
+    tfidf_train, y_train = sm.fit_resample(tfidf_train, y_train)'''
 
     '''smt = SMOTE()
     tfidf_train, y_train = smt.fit_resample(tfidf_train, y_train)'''
@@ -125,8 +135,8 @@ def main():
 
     # LOGISTIC REGRESSION ----------------------------------------------------------------------------------------------
     # train the logistic regression classificator
-    lr_classifier = LogisticRegression(random_state=0, max_iter=1000).fit(tfidf_train, y_train)
-    y_pred = lr_classifier.predict(tfidf_test)
+    lr_classifier = LogisticRegression(random_state=0, max_iter=1000).fit(final_train, y_train)
+    y_pred = lr_classifier.predict(final_test)
     scores(y_test, y_pred, 'Logistic Regression')
 
 
@@ -142,13 +152,14 @@ def main():
 
 
     start = time.time()
-    svm_regressor = svm.SVC(kernel='rbf', gamma=0.58, C=0.81, class_weight='balanced')
+    svm_regressor = svm.SVC(kernel='rbf', gamma=0.6, C=0.8, class_weight='balanced')
+    #svm_regressor = svm.SVC(kernel='linear', class_weight='balanced')
     svm_regressor.fit(tfidf_train, y_train)
     stop = time.time()
     print(f"Training time SVM: {stop - start}s")
 
     # compute the prediction
-    y_pred = svm_regressor.predict(tfidf_test)
+    y_pred = svm_regressor.predict(tfidf_test.toarray())
 
     # compute the performance measures
     scores(y_test, y_pred, 'SVM')
@@ -196,6 +207,7 @@ def main():
 
     # compute the performance measures
     scores(y_test, y_pred, 'Naive Bayes')
+
 
 
 if __name__ == '__main__':

@@ -124,7 +124,6 @@ def preprocess_data(df_raw):
 
     df = df.drop(columns=['time', 'date'])
     df = pd.concat([df, time_one_hot, day_of_week_one_hot], axis=1)
-    df = pd.concat([df, time_one_hot], axis=1)
 
     labels = df["Class"].to_numpy()
     features = df.drop(columns=['Class'])  # df[['date', 'time', 'text']]

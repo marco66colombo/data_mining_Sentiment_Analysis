@@ -10,4 +10,4 @@ extraction to better characterize the data. The solution
 compares different classification models to get the best possible
 result.
 
-**Full project report avalialbe (here)[./Sentiment_Analysis_Report.pdf]**
+**Full project report avalialbe [here](./Sentiment_Analysis_Report.pdf)**
